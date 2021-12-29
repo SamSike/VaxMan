@@ -11,7 +11,7 @@
 #include <vector>
 #include <deque>
 #include <windows.h>
-#include <GL/glut.h>
+#include "..\Dependencies\glut.h"
 #include <iostream>
 #include <string>
 #define _USE_MATH_DEFINES
