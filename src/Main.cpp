@@ -21,7 +21,8 @@ using namespace std;
 static const int ORIGINAL_INFECTION = 4; //Original number of infections
 static const int MAX_INFECTION = 32 * ORIGINAL_INFECTION; //Max number of infections on the screen at one point of time
 static const int MULTIPLY_TIME = 30; //Time it takes for one infection to multiply
-static const float SQUARE_SIZE = 50.0; //size of one square on the game
+static const float SQUARE_SIZE = 50.0; //Size of one square on the game
+static const int MAX_POINTS = 106; //Max points attainable
 
 static bool replay = false; //check if starts a new game
 static bool over = true; //check for the game to be over
@@ -33,15 +34,17 @@ static int rotation = 0; // orientation of pacman
 class Infection {
 	static int numberOfInfections = 0;
 
-private:
 	int secondsAlive = 0;
 	float location[3];
+	float rgb[3];
 
 public:
 
 	//Creates an infection at specified co-ordinates and direction
 	Infection(const float& locationX, const float& locationY, const float& direction)
 		: location[0](locationX), location[1](locationY), location[2](direction) {
+		for (int i = 0; i < 3; i++)
+			rgb[i] = (rand() % 100)/100.0;
 		numberOfInfections++;
 	}
 
@@ -122,6 +125,43 @@ public:
 			break;
 		}
 	}
+
+	//Method to draw an infection character through consecutive circles algorithm
+	void DrawInfection() {
+
+		int x, y;
+		glBegin(GL_LINES);
+		glColor3f(rgb[0], rgb[1], rgb[2]);
+
+		//draw the head
+		for (int k = 0; k < 32; k++) {
+
+			x = (float)k / 2.0 * cos(360 * M_PI / 180.0) + (location[0] * SQUARE_SIZE);
+			y = (float)k / 2.0 * sin(360 * M_PI / 180.0) + (location[1] * SQUARE_SIZE);
+
+			for (int i = 180; i <= 360; i++) {
+				glVertex2f(x, y);
+				x = (float)k / 2.0 * cos(i * M_PI / 180.0) + (location[0] * SQUARE_SIZE);
+				y = (float)k / 2.0 * sin(i * M_PI / 180.0) + (location[1] * SQUARE_SIZE);
+				glVertex2f(x, y);
+			}
+		}
+		glEnd();
+
+		//draw body
+		glRectf((location[0] * SQUARE_SIZE) - 17, location[1] * SQUARE_SIZE, 
+			(location[0] * SQUARE_SIZE) + 15, (location[1] * SQUARE_SIZE) + 15);
+		glBegin(GL_POINTS);
+		glColor3f(0, 0.2, 0.4);
+
+		//draw eyes and legs
+		glVertex2f((location[0] * SQUARE_SIZE) - 11, (location[1] * SQUARE_SIZE) + 14); //legs
+		glVertex2f((location[0] * SQUARE_SIZE) - 1, (location[1] * SQUARE_SIZE) + 14); //legs
+		glVertex2f((location[0] * SQUARE_SIZE) + 8, (location[1] * SQUARE_SIZE) + 14); //legs
+		glVertex2f((location[0] * SQUARE_SIZE) + 4, (location[1] * SQUARE_SIZE) - 3); //eyes
+		glVertex2f((location[0] * SQUARE_SIZE) - 7, (location[1] * SQUARE_SIZE) - 3); //eyes 
+		glEnd();
+	}
 };
 
 static auto infectionArray = new vector<Infection, MAX_INFECTION>(); //array for storing all infections present on screen
@@ -193,7 +233,7 @@ void DrawLabyrinth() {
 }
 
 //Method to check if the food has been eaten
-bool IsFoodEaten(int x, int y, float pacmanX, float pacmanY) {
+bool IsFoodEaten(const int& x, const int& y, float pacmanX, float pacmanY) {
 
 	if (x >= pacmanX - 16.0 * cos(359 * M_PI / 180.0) && x <= pacmanX + 16.0 * cos(359 * M_PI / 180.0)) {
 		if (y >= pacmanY - 16.0 * cos(359 * M_PI / 180.0) && y <= pacmanY + 16.0 * cos(359 * M_PI / 180.0)) {
@@ -210,7 +250,7 @@ void DrawFood(float pacmanX, float pacmanY) {
 
 	//check if the food has not been eaten
 	for (int i = 0; i < food.size(); i = i + 2) {
-		if (!foodEaten(food.at(i) * SQUARE_SIZE, food.at(i + 1) * SQUARE_SIZE, pacmanX, pacmanY)) {
+		if (!IsFoodEaten(food.at(i) * SQUARE_SIZE, food.at(i + 1) * SQUARE_SIZE, pacmanX, pacmanY)) {
 			temp.push_back(food.at(i));
 			temp.push_back(food.at(i + 1));
 		}
@@ -252,42 +292,6 @@ void DrawVaxman(float positionX, float positionY, float rotation) {
 	glEnd();
 }
 
-//Method to draw an infection character through consecutive circles algorithm
-void DrawInfection(float positionX, float positionY, float r, float g, float b) {
-
-	int x, y;
-	glBegin(GL_LINES);
-	glColor3f(r, g, b);
-
-	//draw the head
-	for (int k = 0; k < 32; k++) {
-
-		x = (float)k / 2.0 * cos(360 * M_PI / 180.0) + (positionX * SQUARE_SIZE);
-		y = (float)k / 2.0 * sin(360 * M_PI / 180.0) + (positionY * SQUARE_SIZE);
-
-		for (int i = 180; i <= 360; i++) {
-			glVertex2f(x, y);
-			x = (float)k / 2.0 * cos(i * M_PI / 180.0) + (positionX * SQUARE_SIZE);
-			y = (float)k / 2.0 * sin(i * M_PI / 180.0) + (positionY * SQUARE_SIZE);
-			glVertex2f(x, y);
-		}
-	}
-	glEnd();
-
-	//draw body
-	glRectf((positionX * SQUARE_SIZE) - 17, positionY * SQUARE_SIZE, (positionX * SQUARE_SIZE) + 15, (positionY * SQUARE_SIZE) + 15);
-	glBegin(GL_POINTS);
-	glColor3f(0, 0.2, 0.4);
-
-	//draw eyes and legs
-	glVertex2f((positionX * SQUARE_SIZE) - 11, (positionY * SQUARE_SIZE) + 14); //legs
-	glVertex2f((positionX * SQUARE_SIZE) - 1, (positionY * SQUARE_SIZE) + 14); //legs
-	glVertex2f((positionX * SQUARE_SIZE) + 8, (positionY * SQUARE_SIZE) + 14); //legs
-	glVertex2f((positionX * SQUARE_SIZE) + 4, (positionY * SQUARE_SIZE) - 3); //eyes
-	glVertex2f((positionX * SQUARE_SIZE) - 7, (positionY * SQUARE_SIZE) - 3); //eyes 
-	glEnd();
-}
-
 //Destroys infection in contact with VaxMan
 void DestroyInfection(const int& deleteIndex) {
 	infectionArray->at(deleteIndex) = infectionArray->back();
@@ -295,12 +299,12 @@ void DestroyInfection(const int& deleteIndex) {
 }
 
 //Method to set the pressed key
-void KeyPressed(unsigned char key, int x, int y) {
+void KeyPressed(const unsigned char& key, int x, int y) {
 	keyStates[key] = true;
 }
 
 //Method to unset the released key
-void KeyUp(unsigned char key, int x, int y) {
+void KeyUp(const unsigned char& key, int x, int y) {
 	keyStates[key] = false;
 }
 
@@ -311,10 +315,10 @@ void StartInfection() {
 	infectionArray->clear();
 
 	// Creates ORIGINAL_INFECTION infections
-	infectionArray->push_back({ 10.5, 8.5, 1.0 }); //coordinates and direction of first monster
-	infectionArray->push_back({ 13.5, 1.5, 2.0 }); //coordinates and direction of second monster
-	infectionArray->push_back({ 4.5, 6.5, 3.0 }); //coordinates and direction of third monster
-	infectionArray->push_back({ 2.5, 13.5, 4.0 }); //coordinates and direction of fourth monster
+	infectionArray->push_back({ 10.5, 8.5, 1.0 }); //coordinates and direction of first infection
+	infectionArray->push_back({ 13.5, 1.5, 2.0 }); //coordinates and direction of second infection
+	infectionArray->push_back({ 4.5, 6.5, 3.0 }); //coordinates and direction of third infection
+	infectionArray->push_back({ 2.5, 13.5, 4.0 }); //coordinates and direction of fourth infection
 }
 
 //Method to reset all the variable necessaries to start the game again
@@ -411,7 +415,7 @@ void IsGameOver() {
 	if (pacmanX == monster4X && pacmanY == monster4Y) {
 		over = true;
 	}
-	if (points == 106) {
+	if (points == MAX_POINTS) {
 		over = true;
 	}
 }
@@ -536,15 +540,12 @@ void Display() {
 		if (!over) {
 			DrawLabyrinth();
 			DrawFood((1.5 + xIncrement) * SQUARE_SIZE, (1.5 + yIncrement) * SQUARE_SIZE);
-			drawPacman(1.5 + xIncrement, 1.5 + yIncrement, rotation);
-			updateMonster(monster1, 1);
-			updateMonster(monster2, 2);
-			updateMonster(monster3, 3);
-			updateMonster(monster4, 4);
-			drawMonster(monster1[0], monster1[1], 0.0, 1.0, 1.0); //cyan
-			drawMonster(monster2[0], monster2[1], 1.0, 0.0, 0.0); //red
-			drawMonster(monster3[0], monster3[1], 1.0, 0.0, 0.6); //magenta
-			drawMonster(monster4[0], monster4[1], 1.0, 0.3, 0.0); //orange
+			DrawVaxMan(1.5 + xIncrement, 1.5 + yIncrement, rotation);
+
+			for (int i = 0; i < infectionArray.size(); i++) {
+				infectionArray->at(i).UpdateInfection();
+				infectionArray->at(i).DrawInfection();
+			}
 		}
 		else {
 			ResultsDisplay();
