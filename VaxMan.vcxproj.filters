@@ -23,7 +23,6 @@
     <None Include="GL\glut.def">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="GL\glut32.dll" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GL\glut.h">
