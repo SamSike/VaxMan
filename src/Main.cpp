@@ -11,7 +11,7 @@
 #include <vector>
 #include <deque>
 #include <windows.h>
-#include "..\Dependencies\glut.h"
+#include <glut.h>
 #include <iostream>
 #include <string>
 #define _USE_MATH_DEFINES
@@ -21,7 +21,7 @@ using namespace std;
 static bool replay = false; //check if starts a new game
 static bool over = true; //check for the game to be over
 static float squareSize = 50.0; //size of one square on the game
-static float xIncrement = 0; // x movement on pacman
+static float xIncrement = 0; // x movement on pacman	
 static float yIncrement = 0; // y movement on pacman
 static int rotation = 0; // orientation of pacman
 float* monster1 = new float[3]{ 10.5, 8.5, 1.0 }; //coordinates and direction of first monster
@@ -335,7 +335,7 @@ void gameOver() {
 void resultsDisplay() {
 	if (points == 106) {
 		//Won
-		char* message = "*************************************";
+		const char* message = "*************************************";
 		glRasterPos2f(170, 250);
 		while (*message)
 			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *message++);
@@ -355,7 +355,7 @@ void resultsDisplay() {
 	}
 	else {
 		//Lost
-		char* message = "*************************";
+		const char* message = "*************************";
 		glRasterPos2f(210, 250);
 		while (*message)
 			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *message++);
@@ -391,7 +391,7 @@ void resultsDisplay() {
 //Method to display the starting instructions
 void welcomeScreen() {
 	glClearColor(0, 0.2, 0.4, 1.0);
-	char* message = "*************************************";
+	const char* message = "*************************************";
 	glRasterPos2f(150, 200);
 	while (*message)
 		glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *message++);

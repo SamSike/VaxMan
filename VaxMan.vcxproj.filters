@@ -19,4 +19,21 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="GL\glut.def">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="GL\glut32.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GL\glut.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="GL\glut32.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="GL\README-win32.txt" />
+  </ItemGroup>
 </Project>
