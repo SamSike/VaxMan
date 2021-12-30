@@ -93,15 +93,31 @@ class Infection {
 public:
 
 	//Creates an infection at specified co-ordinates and direction
-	Infection(const float& locationX, const float& locationY, const float& direction)
-		: location[0](locationX), location[1](locationY), location[2](direction) {
-		for (int i = 0; i < 3; i++)
-			rgb[i] = (rand() % 100)/100.0;
+	Infection(const float* location) {
+		for (int i = 0; i < 3; i++) {
+			rgb[i] = (rand() % 100) / 100.0;
+			this.location[i] = location[i];
+		}
 		numberOfInfections++;
 	}
 
+	//Clones an existing infection that meets criteria to multiply
+	Infection(const Infection& originalInfection) {
+		for (int i = 0; i < 3; i++) {
+			rgb[i] = (rand() % 100) / 100.0;
+			this.location[i] = originalInfection.location[i];
+		}
+		numberOfInfections++;
+	}
+
+	//Destroys an infection
+	~Infection() { numberOfInfections--; }
+
 	//Checks if infection is a Pandemic, i.e. if the game is over
 	static bool IsPandemic() const { return (numberOfInfections == MAX_INFECTION); }
+
+	//Collision Checking - returns true for a collision
+	bool CollisionCheck() { return (location[0] == vaxman.getX() || location[1] == vaxman.getY()) }
 
 	//Checks if infection can multiply at current time
 	bool IsMultiply() {
@@ -418,14 +434,18 @@ void KeyOperations() {
 //Method to check if the game is over
 void IsGameOver() {
 
-	for (int i = 0; i < infectionArray.size(); i++)
-		if (infectionArray(i).CollisionCheck())
-			//x==x && y==y
-			DestroyInfection(i);
+	for (int i = 0; i < infectionArray.size(); i++) {
+		if (infectionArray->at(i).CollisionCheck())
+			DestroyInfection(i); //An infection in contact with vaxman is destroyed
 
-	if (points == MAX_POINTS) {
-		over = true;
+		else if (infectionArray->at(i).IsMultiply) {
+			Infection newInfection = infectionArray->at(i); //Cloned current infection
+			infectionArray->push_back(newInfection); //Added clone to array of infections
+		}
 	}
+
+	if (points == MAX_POINTS || Infection::IsPandemic())
+		over = true;
 }
 
 //Method to display win
