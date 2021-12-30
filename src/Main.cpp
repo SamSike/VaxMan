@@ -27,6 +27,19 @@ static const float SQUARE_SIZE = 50.0; //Size of one square on the game
 static bool replay = false; //check if starts a new game
 static bool over = true; //check for the game to be over
 
+static vector<int> border = { 0, 0, 15, 1, 15, 15, 14, 1, 0, 14, 15, 15, 1, 14, 0, 0 }; //coordinates of the border walls
+
+//coordinates of the obstacles (divided into 3 for clarity)
+static vector<int> obstaclesTop = { 2, 2, 3, 6, 3, 6, 4, 5, 4, 2, 5, 4, 5, 3, 6, 5, 6, 1, 9, 2, 7, 2, 8, 5, 9, 5, 10, 3, 10, 4, 11, 2, 11, 5, 12, 6, 12, 6, 13, 2 };
+static vector<int> obstaclesMiddle = { 2, 9, 3, 7, 3, 7, 4, 8, 4, 9, 5, 11, 5, 6, 6, 10, 6, 10, 7, 8, 7, 8, 8, 9, 6, 7, 7, 6, 8, 6, 9, 7, 10, 6, 9, 10, 9, 10, 8, 8, 11, 9, 10, 11, 11, 8, 12, 7, 12, 7, 13, 9 };
+static vector<int> obstaclesBottom = { 2, 10, 3, 13, 3, 13, 4, 12, 5, 12, 6, 13, 6, 13, 7, 11, 8, 11, 9, 13, 9, 13, 10, 12, 11, 12, 12, 13, 12, 13, 13, 10 };
+static deque<float> food = { 1.5, 1.5, 1.5, 2.5, 1.5, 3.5, 1.5, 4.5, 1.5, 5.5, 1.5, 6.5, 1.5, 7.5, 1.5, 8.5, 1.5, 9.5, 1.5, 10.5, 1.5, 11.5, 1.5, 12.5, 1.5, 13.5, 2.5, 1.5, 2.5, 6.5, 2.5, 9.5, 2.5, 13.5, 3.5, 1.5, 3.5, 2.5, 3.5, 3.5, 3.5, 4.5, 3.5, 6.5, 3.5, 8.5, 3.5, 9.5, 3.5, 10.5, 3.5, 11.5, 3.5, 13.5, 4.5, 1.5, 4.5, 4.5, 4.5, 5.5, 4.5, 6.5, 4.5, 7.5, 4.5, 8.5, 4.5, 11.5, 4.5, 12.5, 4.5, 13.5, 5.5, 1.5, 5.5, 2.5, 5.5, 5.5, 5.5, 10.5, 5.5, 11.5, 5.5, 13.5, 6.5, 2.5, 6.5, 3.5, 6.5, 4.5, 6.5, 5.5, 6.5, 7.5, 6.5, 10.5, 6.5, 13.5, 7.5, 5.5, 7.5, 6.5, 7.5, 7.5, 7.5, 9.5, 7.5, 10.5, 7.5, 11.5, 7.5, 12.5, 7.5, 13.5, 8.5, 2.5, 8.5, 3.5, 8.5, 4.5, 8.5, 5.5, 8.5, 7.5, 8.5, 10.5, 8.5, 13.5, 9.5, 1.5, 9.5, 2.5, 9.5, 5.5, 9.5, 10.5, 9.5, 11.5, 9.5, 13.5, 10.5, 1.5, 10.5, 4.5, 10.5, 5.5, 10.5, 6.5, 10.5, 7.5, 10.5, 8.5, 10.5, 11.5, 10.5, 12.5, 10.5, 13.5, 11.5, 1.5, 11.5, 2.5, 11.5, 3.5, 11.5, 4.5, 11.5, 5.5, 11.5, 6.5, 11.5, 8.5, 11.5, 9.5, 11.5, 10.5, 11.5, 11.5, 11.5, 13.5, 12.5, 1.5, 12.5, 6.5, 12.5, 9.5, 12.5, 13.5, 13.5, 1.5, 13.5, 2.5, 13.5, 3.5, 13.5, 4.5, 13.5, 5.5, 13.5, 6.5, 13.5, 7.5, 13.5, 8.5, 13.5, 9.5, 13.5, 10.5, 13.5, 11.5, 13.5, 12.5, 13.5, 13.5 };
+
+static vector<vector<bool>> bitmap; // 2d image of which squares are blocked and which are clear for vaxman to move in 
+bool* keyStates = new bool[256]; // record of all keys pressed 
+int points = 0; // total points collected
+
+
 class VaxMan {
 
 	float xIncrement, yIncrement; // Movement of VaxMan
@@ -36,8 +49,6 @@ public:
 
 	//Sets vaxman to original configuration
 	void Start() {
-		positionX = 1.5;
-		positionY = 1.5;
 		xIncrement = 0;
 		yIncrement = 0;
 		rotation = 0;
@@ -50,13 +61,13 @@ public:
 	const float getY() { return (1.5 + yIncrement) * SQUARE_SIZE; }
 
 	//Increases xIncrement
-	float setXIncrement(float& increment) { xIncrement += increment; }
+	void setXIncrement(float increment) { xIncrement += increment; }
 
 	//Increases yIncrement
-	float setYIncrement(float& increment) { yIncrement += increment; }
+	void setYIncrement(float increment) { yIncrement += increment; }
 
 	//Sets rotation
-	int setRotation(int& rotation) { this.rotation = rotation; }
+	void setRotation(int rotation) { this->rotation = rotation; }
 
 	//Method to draw the vaxman character through consecutive circle algorithm
 	void DrawVaxMan() {
@@ -84,7 +95,7 @@ public:
 
 class Infection {
 
-	static int numberOfInfections = 0;
+	static int numberOfInfections;
 
 	int secondsAlive = 0;
 	float location[3];
@@ -92,20 +103,39 @@ class Infection {
 
 public:
 
-	//Creates an infection at specified co-ordinates and direction
-	Infection(const float* location) {
+	//Default constructor
+	Infection() {
+
 		for (int i = 0; i < 3; i++) {
 			rgb[i] = (rand() % 100) / 100.0;
-			this.location[i] = location[i];
+		}
+
+		location[0] = 10.5;
+		location[1] = 8.5;
+		location[2] = 1.0;
+
+		numberOfInfections++;
+	}
+
+	//Creates an infection at specified co-ordinates and direction
+	Infection(float x, float y, float d) {
+
+		location[0] = x;
+		location[1] = y;
+		location[2] = d;
+
+		for (int i = 0; i < 3; i++) {
+			rgb[i] = (rand() % 100) / 100.0;
 		}
 		numberOfInfections++;
 	}
 
 	//Clones an existing infection that meets criteria to multiply
 	Infection(const Infection& originalInfection) {
+
 		for (int i = 0; i < 3; i++) {
 			rgb[i] = (rand() % 100) / 100.0;
-			this.location[i] = originalInfection.location[i];
+			this->location[i] = originalInfection.location[i] + 0.1;
 		}
 		numberOfInfections++;
 	}
@@ -114,10 +144,10 @@ public:
 	~Infection() { numberOfInfections--; }
 
 	//Checks if infection is a Pandemic, i.e. if the game is over
-	static bool IsPandemic() const { return (numberOfInfections == MAX_INFECTION); }
+	static bool IsPandemic() { return (numberOfInfections == MAX_INFECTION); }
 
 	//Collision Checking - returns true for a collision
-	bool CollisionCheck() { return (location[0] == vaxman.getX() || location[1] == vaxman.getY()) }
+	bool CollisionCheck() { return (location[0] == vaxman.getX() || location[1] == vaxman.getY()); }
 
 	//Checks if infection can multiply at current time
 	bool IsMultiply() {
@@ -215,7 +245,7 @@ public:
 		glEnd();
 
 		//draw body
-		glRectf((location[0] * SQUARE_SIZE) - 17, location[1] * SQUARE_SIZE, 
+		glRectf((location[0] * SQUARE_SIZE) - 17, location[1] * SQUARE_SIZE,
 			(location[0] * SQUARE_SIZE) + 15, (location[1] * SQUARE_SIZE) + 15);
 		glBegin(GL_POINTS);
 		glColor3f(0, 0.2, 0.4);
@@ -229,20 +259,22 @@ public:
 		glEnd();
 	}
 };
+int Infection::numberOfInfections = 0;
 
-static auto infectionArray = new vector<Infection, MAX_INFECTION>(); //array for storing all infections present on screen
+static vector<Infection> infectionArray(MAX_INFECTION); //array for storing all infections present on screen
 
-static vector<int> border = { 0, 0, 15, 1, 15, 15, 14, 1, 0, 14, 15, 15, 1, 14, 0, 0 }; //coordinates of the border walls
+//Method to start the infection
+void StartInfection() {
 
-//coordinates of the obstacles (divided into 3 for clarity)
-static vector<int> obstaclesTop = { 2, 2, 3, 6, 3, 6, 4, 5, 4, 2, 5, 4, 5, 3, 6, 5, 6, 1, 9, 2, 7, 2, 8, 5, 9, 5, 10, 3, 10, 4, 11, 2, 11, 5, 12, 6, 12, 6, 13, 2 };
-static vector<int> obstaclesMiddle = { 2, 9, 3, 7, 3, 7, 4, 8, 4, 9, 5, 11, 5, 6, 6, 10, 6, 10, 7, 8, 7, 8, 8, 9, 6, 7, 7, 6, 8, 6, 9, 7, 10, 6, 9, 10, 9, 10, 8, 8, 11, 9, 10, 11, 11, 8, 12, 7, 12, 7, 13, 9 };
-static vector<int> obstaclesBottom = { 2, 10, 3, 13, 3, 13, 4, 12, 5, 12, 6, 13, 6, 13, 7, 11, 8, 11, 9, 13, 9, 13, 10, 12, 11, 12, 12, 13, 12, 13, 13, 10 };
-static deque<float> food = { 1.5, 1.5, 1.5, 2.5, 1.5, 3.5, 1.5, 4.5, 1.5, 5.5, 1.5, 6.5, 1.5, 7.5, 1.5, 8.5, 1.5, 9.5, 1.5, 10.5, 1.5, 11.5, 1.5, 12.5, 1.5, 13.5, 2.5, 1.5, 2.5, 6.5, 2.5, 9.5, 2.5, 13.5, 3.5, 1.5, 3.5, 2.5, 3.5, 3.5, 3.5, 4.5, 3.5, 6.5, 3.5, 8.5, 3.5, 9.5, 3.5, 10.5, 3.5, 11.5, 3.5, 13.5, 4.5, 1.5, 4.5, 4.5, 4.5, 5.5, 4.5, 6.5, 4.5, 7.5, 4.5, 8.5, 4.5, 11.5, 4.5, 12.5, 4.5, 13.5, 5.5, 1.5, 5.5, 2.5, 5.5, 5.5, 5.5, 10.5, 5.5, 11.5, 5.5, 13.5, 6.5, 2.5, 6.5, 3.5, 6.5, 4.5, 6.5, 5.5, 6.5, 7.5, 6.5, 10.5, 6.5, 13.5, 7.5, 5.5, 7.5, 6.5, 7.5, 7.5, 7.5, 9.5, 7.5, 10.5, 7.5, 11.5, 7.5, 12.5, 7.5, 13.5, 8.5, 2.5, 8.5, 3.5, 8.5, 4.5, 8.5, 5.5, 8.5, 7.5, 8.5, 10.5, 8.5, 13.5, 9.5, 1.5, 9.5, 2.5, 9.5, 5.5, 9.5, 10.5, 9.5, 11.5, 9.5, 13.5, 10.5, 1.5, 10.5, 4.5, 10.5, 5.5, 10.5, 6.5, 10.5, 7.5, 10.5, 8.5, 10.5, 11.5, 10.5, 12.5, 10.5, 13.5, 11.5, 1.5, 11.5, 2.5, 11.5, 3.5, 11.5, 4.5, 11.5, 5.5, 11.5, 6.5, 11.5, 8.5, 11.5, 9.5, 11.5, 10.5, 11.5, 11.5, 11.5, 13.5, 12.5, 1.5, 12.5, 6.5, 12.5, 9.5, 12.5, 13.5, 13.5, 1.5, 13.5, 2.5, 13.5, 3.5, 13.5, 4.5, 13.5, 5.5, 13.5, 6.5, 13.5, 7.5, 13.5, 8.5, 13.5, 9.5, 13.5, 10.5, 13.5, 11.5, 13.5, 12.5, 13.5, 13.5 };
+	//Empties infectionArray
+	infectionArray.clear();
 
-static vector<vector<bool>> bitmap; // 2d image of which squares are blocked and which are clear for vaxman to move in 
-bool* keyStates = new bool[256]; // record of all keys pressed 
-int points = 0; // total points collected
+	// Creates ORIGINAL_INFECTION infections
+	infectionArray.push_back(Infection( 10.5, 8.5, 1.0 )); //coordinates and direction of first infection
+	infectionArray.push_back(Infection( 13.5, 1.5, 2.0 )); //coordinates and direction of second infection
+	infectionArray.push_back(Infection( 4.5, 6.5, 3.0 )); //coordinates and direction of third infection
+	infectionArray.push_back(Infection( 2.5, 13.5, 4.0 )); //coordinates and direction of fourth infection
+}
 
 //Initializes the game with the appropiate information 
 void Init(void) {
@@ -343,33 +375,20 @@ void DrawFood() {
 //Destroys infection in contact with VaxMan
 void DestroyInfection(const int& deleteIndex) {
 
-	infectionArray->at(deleteIndex) = infectionArray->back();
-	infectionArray->pop_back();
+	infectionArray.at(deleteIndex) = infectionArray.back();
+	infectionArray.pop_back();
 }
 
 //Method to set the pressed key
-void KeyPressed(const unsigned char& key, int x, int y) { keyStates[key] = true; }
+void KeyPressed(unsigned char key, int x, int y) { keyStates[key] = true; }
 
 //Method to unset the released key
-void KeyUp(const unsigned char& key, int x, int y) { keyStates[key] = false; }
-
-//Method to start the infection
-void StartInfection() {
-
-	//Empties infectionArray
-	infectionArray->clear();
-
-	// Creates ORIGINAL_INFECTION infections
-	infectionArray->push_back({ 10.5, 8.5, 1.0 }); //coordinates and direction of first infection
-	infectionArray->push_back({ 13.5, 1.5, 2.0 }); //coordinates and direction of second infection
-	infectionArray->push_back({ 4.5, 6.5, 3.0 }); //coordinates and direction of third infection
-	infectionArray->push_back({ 2.5, 13.5, 4.0 }); //coordinates and direction of fourth infection
-}
+void KeyUp(unsigned char key, int x, int y) { keyStates[key] = false; }
 
 //Method to reset all the variable necessaries to start the game again
 void ResetGame() {
 
-	vaxman.New();
+	vaxman.Start();
 	StartInfection();
 
 	points = 0;
@@ -422,7 +441,7 @@ void KeyOperations() {
 	}
 	if (keyStates[' ']) {
 		if (!replay && over) {
-			resetGame();
+			ResetGame();
 			replay = true;
 		}
 		else if (replay && over) {
@@ -435,12 +454,12 @@ void KeyOperations() {
 void IsGameOver() {
 
 	for (int i = 0; i < infectionArray.size(); i++) {
-		if (infectionArray->at(i).CollisionCheck())
+		if (infectionArray.at(i).CollisionCheck())
 			DestroyInfection(i); //An infection in contact with vaxman is destroyed
 
-		else if (infectionArray->at(i).IsMultiply) {
-			Infection newInfection = infectionArray->at(i); //Cloned current infection
-			infectionArray->push_back(newInfection); //Added clone to array of infections
+		else if (infectionArray.at(i).IsMultiply()) {
+			Infection newInfection = infectionArray.at(i); //Cloned current infection
+			infectionArray.push_back(newInfection); //Added clone to array of infections
 		}
 	}
 
@@ -518,9 +537,9 @@ void LossScreen() {
 void ResultsDisplay() {
 
 	if (points == MAX_POINTS)
-		win();
+		WinScreen();
 	else
-		loss();
+		LossScreen();
 }
 
 //Method to display the starting instructions
@@ -557,22 +576,22 @@ void WelcomeScreen() {
 //Method to display the screen and its elements
 void Display() {
 
-	if (points == 1) {
+	if (points == 0 || points == 1) {
 		over = false;
 	}
-	keyOperations();
+	KeyOperations();
 	glClear(GL_COLOR_BUFFER_BIT);
 	IsGameOver();
 
 	if (replay) {
 		if (!over) {
 			DrawLabyrinth();
-			DrawFood(vaxman.getX(), vaxman.getY());
+			DrawFood();
 			vaxman.DrawVaxMan();
 
 			for (int i = 0; i < infectionArray.size(); i++) {
-				infectionArray->at(i).UpdateInfection();
-				infectionArray->at(i).DrawInfection();
+				infectionArray.at(i).UpdateInfection();
+				infectionArray.at(i).DrawInfection();
 			}
 		}
 		else {
