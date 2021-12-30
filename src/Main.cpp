@@ -29,14 +29,13 @@ static bool over = true; //check for the game to be over
 
 class VaxMan {
 
-	float positionX, positionY; // Co-ordinates of VaxMan
 	float xIncrement, yIncrement; // Movement of VaxMan
 	int rotation; // Orientation of VaxMan
 
 public:
 
-	//Resets vaxman to original configuration
-	void New() {
+	//Sets vaxman to original configuration
+	void Start() {
 		positionX = 1.5;
 		positionY = 1.5;
 		xIncrement = 0;
@@ -44,36 +43,43 @@ public:
 		rotation = 0;
 	}
 
+	//Returns current x-coordinate
+	const float getX() { return (1.5 + xIncrement) * SQUARE_SIZE; }
+
+	//Returns current y-coordinate
+	const float getY() { return (1.5 + yIncrement) * SQUARE_SIZE; }
+
+	//Increases xIncrement
+	float setXIncrement(float& increment) { xIncrement += increment; }
+
+	//Increases yIncrement
+	float setYIncrement(float& increment) { yIncrement += increment; }
+
+	//Sets rotation
+	int setRotation(int& rotation) { this.rotation = rotation; }
+
 	//Method to draw the vaxman character through consecutive circle algorithm
 	void DrawVaxMan() {
 
 		int x, y;
-		positionX += xIncrement;
-		positionY += yIncrement;
 		glBegin(GL_LINES);
 		glColor3f(1.0, 1.0, 0.0);
 
 		for (int k = 0; k < 32; k++) {
-			x = (float)k / 2.0 * cos((30 + 90 * rotation) * M_PI / 180.0) + (positionX * SQUARE_SIZE);
-			y = (float)k / 2.0 * sin((30 + 90 * rotation) * M_PI / 180.0) + (positionY * SQUARE_SIZE);
+			x = (float)k / 2.0 * cos((30 + 90 * rotation) * M_PI / 180.0) + getX();
+			y = (float)k / 2.0 * sin((30 + 90 * rotation) * M_PI / 180.0) + getY();
 
 			for (int i = 30; i < 330; i++) {
 				glVertex2f(x, y);
-				x = (float)k / 2.0 * cos((i + 90 * rotation) * M_PI / 180.0) + (positionX * SQUARE_SIZE);
-				y = (float)k / 2.0 * sin((i + 90 * rotation) * M_PI / 180.0) + (positionY * SQUARE_SIZE);
+				x = (float)k / 2.0 * cos((i + 90 * rotation) * M_PI / 180.0) + getX();
+				y = (float)k / 2.0 * sin((i + 90 * rotation) * M_PI / 180.0) + getY();
 				glVertex2f(x, y);
 			}
 		}
 		glEnd();
 	}
 
-	//Returns positionX
-	const float getX() { return positionX; }
-
-	//Returns positionY
-	const float getY() { return positionY; }
-
-	VaxMan() { New(); }
+	VaxMan() { Start(); }
 }vaxman;
 
 class Infection {
@@ -296,7 +302,7 @@ void DrawFood() {
 
 	//check if the food has not been eaten
 	for (int i = 0; i < food.size(); i = i + 2) {
-		if (!IsFoodEaten(food.at(i) * SQUARE_SIZE, food.at(i + 1) * SQUARE_SIZE, vaxman.getX(), vaxman.getY())) {
+		if (!IsFoodEaten(food.at(i) * SQUARE_SIZE, food.at(i + 1) * SQUARE_SIZE)) {
 			temp.push_back(food.at(i));
 			temp.push_back(food.at(i + 1));
 		}
@@ -347,10 +353,7 @@ void StartInfection() {
 //Method to reset all the variable necessaries to start the game again
 void ResetGame() {
 
-	over = false;
-	xIncrement = 0;
-	yIncrement = 0;
-	rotation = 0;
+	vaxman.New();
 	StartInfection();
 
 	points = 0;
@@ -365,40 +368,40 @@ void ResetGame() {
 void KeyOperations() {
 
 	//get current position
-	float  x = (1.5 + xIncrement) * SQUARE_SIZE;
-	float y = (1.5 + yIncrement) * SQUARE_SIZE;
+	float  x = vaxman.getX();
+	float y = vaxman.getY();
 
 	//update according to keys pressed
 	if (keyStates['a']) {
 		x -= 2;
 		int x1Quadrant = (int)((x - 16.0 * cos(360 * M_PI / 180.0)) / SQUARE_SIZE);
 		if (!bitmap.at(x1Quadrant).at((int)y / SQUARE_SIZE)) {
-			xIncrement -= 2 / SQUARE_SIZE;
-			rotation = 2;
+			vaxman.setXIncrement(-2 / SQUARE_SIZE);
+			vaxman.setRotation(2);
 		}
 	}
 	if (keyStates['d']) {
 		x += 2;
 		int x2Quadrant = (int)((x + 16.0 * cos(360 * M_PI / 180.0)) / SQUARE_SIZE);
 		if (!bitmap.at(x2Quadrant).at((int)y / SQUARE_SIZE)) {
-			xIncrement += 2 / SQUARE_SIZE;
-			rotation = 0;
+			vaxman.setXIncrement(2 / SQUARE_SIZE);
+			vaxman.setRotation(0);
 		}
 	}
 	if (keyStates['w']) {
 		y -= 2;
 		int y1Quadrant = (int)((y - 16.0 * cos(360 * M_PI / 180.0)) / SQUARE_SIZE);
 		if (!bitmap.at((int)x / SQUARE_SIZE).at(y1Quadrant)) {
-			yIncrement -= 2 / SQUARE_SIZE;
-			rotation = 3;
+			vaxman.setYIncrement(-2 / SQUARE_SIZE);
+			vaxman.setRotation(3);
 		}
 	}
 	if (keyStates['s']) {
 		y += 2;
 		int y2Quadrant = (int)((y + 16.0 * cos(360 * M_PI / 180.0)) / SQUARE_SIZE);
 		if (!bitmap.at((int)x / SQUARE_SIZE).at(y2Quadrant)) {
-			yIncrement += 2 / SQUARE_SIZE;
-			rotation = 1;
+			vaxman.setYIncrement(2 / SQUARE_SIZE);
+			vaxman.setRotation(1);
 		}
 	}
 	if (keyStates[' ']) {
@@ -415,29 +418,11 @@ void KeyOperations() {
 //Method to check if the game is over
 void IsGameOver() {
 
-	int vaxman.getX() = (int)(1.5 + xIncrement);
-	int vaxman.getY() = (int)(1.5 + yIncrement);
-	int monster1X = (int)(monster1[0]);
-	int monster1Y = (int)(monster1[1]);
-	int monster2X = (int)(monster2[0]);
-	int monster2Y = (int)(monster2[1]);
-	int monster3X = (int)(monster3[0]);
-	int monster3Y = (int)(monster3[1]);
-	int monster4X = (int)(monster4[0]);
-	int monster4Y = (int)(monster4[1]);
+	for (int i = 0; i < infectionArray.size(); i++)
+		if (infectionArray(i).CollisionCheck())
+			//x==x && y==y
+			DestroyInfection(i);
 
-	if (vaxman.getX() == monster1X && vaxman.getY() == monster1Y) {
-		over = true;
-	}
-	if (vaxman.getX() == monster2X && vaxman.getY() == monster2Y) {
-		over = true;
-	}
-	if (vaxman.getX() == monster3X && vaxman.getY() == monster3Y) {
-		over = true;
-	}
-	if (vaxman.getX() == monster4X && vaxman.getY() == monster4Y) {
-		over = true;
-	}
 	if (points == MAX_POINTS) {
 		over = true;
 	}
@@ -562,7 +547,7 @@ void Display() {
 	if (replay) {
 		if (!over) {
 			DrawLabyrinth();
-			DrawFood((1.5 + xIncrement) * SQUARE_SIZE, (1.5 + yIncrement) * SQUARE_SIZE);
+			DrawFood(vaxman.getX(), vaxman.getY());
 			vaxman.DrawVaxMan();
 
 			for (int i = 0; i < infectionArray.size(); i++) {
