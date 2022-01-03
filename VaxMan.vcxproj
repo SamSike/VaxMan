@@ -165,6 +165,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="GL\glut.def" />
+    <None Include="GL\glut32.dll" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GL\glut.h" />

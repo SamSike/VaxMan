@@ -14,6 +14,7 @@
 #include <glut.h>
 #include <iostream>
 #include <string>
+#include <ctime>
 #define _USE_MATH_DEFINES
 #include <math.h>
 using namespace std;
@@ -55,10 +56,14 @@ public:
 	}
 
 	//Returns current x-coordinate
-	const float getX() { return (1.5 + xIncrement) * SQUARE_SIZE; }
+	const float getXSquare() { return (1.5 + xIncrement) * SQUARE_SIZE; }
+
+	const float getX() { return 1.5 + xIncrement; }
 
 	//Returns current y-coordinate
-	const float getY() { return (1.5 + yIncrement) * SQUARE_SIZE; }
+	const float getYSquare() { return (1.5 + yIncrement) * SQUARE_SIZE; }
+
+	const float getY() { return 1.5 + yIncrement; }
 
 	//Increases xIncrement
 	void setXIncrement(float increment) { xIncrement += increment; }
@@ -77,13 +82,13 @@ public:
 		glColor3f(1.0, 1.0, 0.0);
 
 		for (int k = 0; k < 32; k++) {
-			x = (float)k / 2.0 * cos((30 + 90 * rotation) * M_PI / 180.0) + getX();
-			y = (float)k / 2.0 * sin((30 + 90 * rotation) * M_PI / 180.0) + getY();
+			x = (float)k / 2.0 * cos((30 + 90 * rotation) * M_PI / 180.0) + getXSquare();
+			y = (float)k / 2.0 * sin((30 + 90 * rotation) * M_PI / 180.0) + getYSquare();
 
 			for (int i = 30; i < 330; i++) {
 				glVertex2f(x, y);
-				x = (float)k / 2.0 * cos((i + 90 * rotation) * M_PI / 180.0) + getX();
-				y = (float)k / 2.0 * sin((i + 90 * rotation) * M_PI / 180.0) + getY();
+				x = (float)k / 2.0 * cos((i + 90 * rotation) * M_PI / 180.0) + getXSquare();
+				y = (float)k / 2.0 * sin((i + 90 * rotation) * M_PI / 180.0) + getYSquare();
 				glVertex2f(x, y);
 			}
 		}
@@ -97,25 +102,14 @@ class Infection {
 
 	static int numberOfInfections;
 
-	int secondsAlive = 0;
+	std::time_t creationTime = std::time(nullptr);
 	float location[3];
 	float rgb[3];
 
 public:
 
 	//Default constructor
-	Infection() {
-
-		for (int i = 0; i < 3; i++) {
-			rgb[i] = (rand() % 100) / 100.0;
-		}
-
-		location[0] = 10.5;
-		location[1] = 8.5;
-		location[2] = 1.0;
-
-		numberOfInfections++;
-	}
+	Infection() { }
 
 	//Creates an infection at specified co-ordinates and direction
 	Infection(float x, float y, float d) {
@@ -150,13 +144,10 @@ public:
 	bool CollisionCheck() { return (location[0] == vaxman.getX() || location[1] == vaxman.getY()); }
 
 	//Checks if infection can multiply at current time
-	bool IsMultiply() {
-		if (secondsAlive == MULTIPLY_TIME) {
-			secondsAlive = 0;
-			return true;
-		}
-		return false;
-	}
+	bool IsMultiply() { 
+		int secondsAlive = std::time(nullptr) - creationTime; //Time since creation
+		return !(secondsAlive % MULTIPLY_TIME); //Multiplies if multiple of MULTIPLY_TIME
+	} 
 
 	//Method to update the position of the infection randomly
 	void UpdateInfection() {
@@ -335,8 +326,8 @@ void DrawLabyrinth() {
 //Method to check if the food has been eaten
 bool IsFoodEaten(const int& x, const int& y) {
 
-	if (x >= vaxman.getX() - 16.0 * cos(359 * M_PI / 180.0) && x <= vaxman.getX() + 16.0 * cos(359 * M_PI / 180.0)) {
-		if (y >= vaxman.getY() - 16.0 * cos(359 * M_PI / 180.0) && y <= vaxman.getY() + 16.0 * cos(359 * M_PI / 180.0)) {
+	if (x >= vaxman.getXSquare() - 16.0 * cos(359 * M_PI / 180.0) && x <= vaxman.getXSquare() + 16.0 * cos(359 * M_PI / 180.0)) {
+		if (y >= vaxman.getYSquare() - 16.0 * cos(359 * M_PI / 180.0) && y <= vaxman.getYSquare() + 16.0 * cos(359 * M_PI / 180.0)) {
 			return true;
 		}
 	}
@@ -403,8 +394,8 @@ void ResetGame() {
 void KeyOperations() {
 
 	//get current position
-	float  x = vaxman.getX();
-	float y = vaxman.getY();
+	float  x = vaxman.getXSquare();
+	float y = vaxman.getYSquare();
 
 	//update according to keys pressed
 	if (keyStates['a']) {
@@ -452,7 +443,12 @@ void KeyOperations() {
 
 //Method to check if the game is over
 void IsGameOver() {
+	if (points == MAX_POINTS || Infection::IsPandemic())
+		over = true;
+}
 
+//Adds or deletes infections from infection array
+void CheckInfectionStatus() {
 	for (int i = 0; i < infectionArray.size(); i++) {
 		if (infectionArray.at(i).CollisionCheck())
 			DestroyInfection(i); //An infection in contact with vaxman is destroyed
@@ -462,9 +458,6 @@ void IsGameOver() {
 			infectionArray.push_back(newInfection); //Added clone to array of infections
 		}
 	}
-
-	if (points == MAX_POINTS || Infection::IsPandemic())
-		over = true;
 }
 
 //Method to display win
@@ -576,7 +569,7 @@ void WelcomeScreen() {
 //Method to display the screen and its elements
 void Display() {
 
-	if (points == 0 || points == 1) {
+	if (points == 1) {
 		over = false;
 	}
 	KeyOperations();
@@ -588,6 +581,7 @@ void Display() {
 			DrawLabyrinth();
 			DrawFood();
 			vaxman.DrawVaxMan();
+			CheckInfectionStatus();
 
 			for (int i = 0; i < infectionArray.size(); i++) {
 				infectionArray.at(i).UpdateInfection();
